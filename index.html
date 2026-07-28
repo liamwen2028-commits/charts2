@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>站点 / 象限 / 方法 逐月准确率对比</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; margin:0; padding:24px; background:#fff; color:#1a1a1a; }
+  .wrap { max-width:960px; margin:0 auto; }
+  h1 { font-size:18px; font-weight:600; margin:0 0 16px; }
+  .layout { display:flex; gap:20px; align-items:flex-start; }
+  .chart-box { position:relative; flex:1; min-width:0; height:360px; }
+  .legend { width:340px; flex:none; font-size:13px; color:#52514e; border:1px solid #eee; border-radius:8px; padding:10px 12px; }
+  .lg-item { padding:3px 0; cursor:pointer; user-select:none; white-space:nowrap; }
+  .lg-item .lg-label { display:inline-flex; align-items:center; gap:5px; }
+  .lg-d0 { font-weight:600; color:#1a1a1a; }
+  .lg-d1 { font-weight:500; }
+  .lg-d2 { padding:0; }
+  .lg-quad-row { display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; padding-left:16px; }
+  .lg-methods { display:flex; flex-wrap:wrap; gap:12px; }
+  .lg-item.self-off > .lg-label { opacity:0.4; }
+  .lg-item.eff-off > .lg-label { opacity:0.4; }
+  .line-swatch { width:16px; height:0; display:inline-block; }
+  @media (max-width:680px){ .layout{ flex-direction:column; } .legend{ width:100%; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>站点 / 象限 / 方法 · 逐月准确率对比</h1>
+  <div class="layout">
+    <div class="chart-box">
+      <canvas id="acc" role="img" aria-label="不同站点、象限、方法的逐月准确率折线对比。"></canvas>
+    </div>
+    <div class="legend" id="legend"></div>
+  </div>
+</div>
+
+<script>
+/* ===== 数据区：新增站点 / 象限 / 方法只需在这里加 ===== */
+const MONTHS = ['202504','202505','202506','202507','202508','202509','202510','202511','202512','202601','202602','202603','202604','202605','202606'];
+const DATA = {
+  sites: [
+    { name:'US', quadrants:[
+      { name:'象限1', methods:{
+        '人工':      [72.44,74.71,74.95,72.55,68.34,75.88,75.71,75.71,70.88,73.77,75.40,75.48,74.24,75.33,72.95],
+        '混合模型':  [76.38,76.63,69.63,69.62,75.91,73.11,73.13,71.13,71.22,75.28,75.16,70.84,68.44,69.29,69.07],
+        '堆叠模型':  [75.05,74.22,69.91,70.58,75.16,71.05,71.66,72.29,71.74,75.06,76.69,71.94,69.44,70.24,70.45]
+      }},
+      { name:'象限2', methods:{
+        '人工':      [59.95,61.97,60.61,61.75,64.09,66.06,66.99,64.48,66.14,61.56,64.18,65.25,65.66,65.02,63.54],
+        '混合模型':  [61.50,61.26,59.00,59.16,61.24,59.27,60.85,59.34,58.97,60.95,62.51,56.97,57.06,58.57,56.66],
+        '堆叠模型':  [61.23,61.50,59.88,59.91,61.88,61.40,59.81,59.28,59.37,61.06,64.19,61.68,59.94,60.37,57.66]
+      }}
+    ]},
+    { name:'CA', quadrants:[
+      { name:'象限1', methods:{
+        '人工':      [62.15,62.82,64.92,70.09,66.85,73.51,73.51,67.37,68.05,65.46,68.33,69.56,70.96,73.33,69.13],
+        '混合模型':  [67.47,63.01,60.05,60.87,68.94,65.17,62.85,57.72,59.42,63.90,63.40,62.16,65.03,62.31,57.43],
+        '堆叠模型':  [67.42,62.85,60.05,60.86,69.37,66.99,66.08,60.52,62.81,64.30,63.44,68.23,69.28,66.41,62.37]
+      }},
+      { name:'象限2', methods:{
+        '人工':      [51.28,55.82,54.32,57.28,53.77,57.12,60.36,58.97,58.39,52.83,50.82,58.31,60.10,63.15,62.34],
+        '混合模型':  [58.57,56.74,56.83,56.63,57.10,56.73,57.03,52.73,47.50,50.03,50.85,51.79,52.11,53.36,48.44],
+        '堆叠模型':  [58.57,56.74,56.83,56.63,57.25,57.23,58.07,53.79,48.82,51.39,51.66,55.99,54.48,52.93,46.86]
+      }}
+    ]},
+    { name:'MX', quadrants:[
+      { name:'象限1', methods:{
+        '人工':      [59.48,54.29,62.57,55.95,53.47,53.44,51.03,56.27,67.01,57.28,54.95,54.20,57.50,57.30,62.15],
+        '混合模型':  [62.38,59.25,60.63,56.16,57.11,59.72,60.71,60.25,55.74,55.74,55.86,56.34,58.33,59.18,62.03],
+        '堆叠模型':  [62.52,59.30,60.74,56.18,57.18,59.75,60.40,60.28,54.66,54.66,56.94,56.94,58.34,60.51,65.13]
+      }},
+      { name:'象限2', methods:{
+        '人工':      [49.93,50.71,53.18,52.01,47.27,45.13,47.40,55.06,51.96,47.10,47.17,55.17,51.69,52.22,53.73],
+        '混合模型':  [54.63,52.41,54.49,52.56,56.79,55.14,55.15,55.32,54.66,54.66,55.99,55.17,55.98,53.97,51.86],
+        '堆叠模型':  [54.63,52.41,54.49,52.56,56.79,55.14,55.15,55.32,54.66,54.66,55.86,55.17,55.98,53.97,51.86]
+      }}
+    ]},
+    { name:'GB', quadrants:[
+      { name:'象限1', methods:{
+        '人工':      [54.48,56.21,60.68,55.65,54.49,57.70,58.67,57.88,54.16,55.36,56.35,59.85,62.31,58.43,60.18],
+        '混合模型':  [61.21,50.67,50.02,58.78,51.55,51.67,56.16,45.37,42.14,50.56,48.73,50.56,51.75,43.51,41.15],
+        '堆叠模型':  [61.21,50.67,50.02,58.90,52.01,52.45,57.42,49.63,46.30,51.14,52.49,59.35,61.96,59.03,54.55]
+      }},
+      { name:'象限2', methods:{
+        '人工':      [46.76,50.58,53.43,47.01,46.71,48.54,46.66,47.46,49.26,48.37,48.61,51.34,53.13,53.77,56.55],
+        '混合模型':  [55.81,49.73,50.27,52.88,52.64,52.98,51.76,50.84,48.07,55.03,54.89,52.94,53.14,45.98,44.31],
+        '堆叠模型':  [55.81,49.73,50.27,52.88,52.64,52.98,51.76,50.84,48.14,54.94,52.81,52.89,53.07,45.06,44.31]
+      }}
+    ]}
+    /* 例：再加站点 —
+    ,{ name:'DE', quadrants:[ ... ] }
+    */
+  ]
+};
+/* ===== 数据区结束 ===== */
+
+const METHOD_COLOR = { '人工':'#2a78d6', '混合模型':'#1baf7a', '堆叠模型':'#eb6834' };
+const EXCLUDE_METHODS = ['混合模型'];               // 统一去除的方法（清空数组即可恢复）
+const PCT = {                                       // 站点/象限的占比标注
+  'US': { site:'合计占比84%', '象限1':'占比26%', '象限2':'占比58%' },
+  'CA': { site:'合计占比46%', '象限1':'占比16%', '象限2':'占比30%' },
+  'MX': { site:'合计占比46%', '象限1':'占比29%', '象限2':'占比17%' },
+  'GB': { site:'合计占比55%', '象限1':'占比38%', '象限2':'占比17%' }
+};
+const QUAD_DASH = [ [], [6,4], [2,3], [10,4,2,4] ];      // 象限1实线 / 象限2虚线 / 象限3点线 …
+const SITE_FACTOR = [1, 0.66, 1.28, 0.5];                 // 不同站点用同色系深浅区分
+
+function shade(hex, f){
+  const n = parseInt(hex.slice(1),16); let r=(n>>16)&255, g=(n>>8)&255, b=n&255;
+  if(f<=1){ r*=f; g*=f; b*=f; } else { const k=f-1; r+=(255-r)*k; g+=(255-g)*k; b+=(255-b)*k; }
+  const h=x=>Math.round(Math.max(0,Math.min(255,x))).toString(16).padStart(2,'0');
+  return '#'+h(r)+h(g)+h(b);
+}
+
+const datasets = []; const tree = []; let uid = 0;
+DATA.sites.forEach((site,si)=>{
+  const pct = PCT[site.name] || {};
+  const siteLabel = pct.site ? site.name+'（'+pct.site+'）' : site.name;
+  const siteNode = { key:'n'+(uid++), label:siteLabel, depth:0, on:true, children:[] };
+  site.quadrants.forEach((quad,qi)=>{
+    const quadLabel = pct[quad.name] ? quad.name+'（'+pct[quad.name]+'）' : quad.name;
+    const quadNode = { key:'n'+(uid++), label:quadLabel, depth:1, on:true, children:[] };
+    Object.keys(quad.methods).filter(m => !EXCLUDE_METHODS.includes(m)).forEach((m)=>{
+      const color = shade(METHOD_COLOR[m]||'#888888', SITE_FACTOR[si]??1);
+      const dash = QUAD_DASH[qi] || [4,4];
+      const dsIndex = datasets.length;
+      datasets.push({ label:site.name+' · '+quad.name+' · '+m, data:quad.methods[m],
+        borderColor:color, backgroundColor:color, borderDash:dash, tension:0.3, borderWidth:2, pointRadius:2 });
+      quadNode.children.push({ key:'n'+(uid++), label:m, depth:2, on:true, leaf:true, dsIndex, color, dash });
+    });
+    siteNode.children.push(quadNode);
+  });
+  tree.push(siteNode);
+});
+
+const chart = new Chart(document.getElementById('acc'), {
+  type:'line',
+  data:{ labels:MONTHS, datasets },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    interaction:{ mode:'index', intersect:false },
+    plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:(c)=> c.dataset.label + ': ' + c.parsed.y + '%' } } },
+    scales:{
+      x:{ grid:{ display:false }, ticks:{ color:'#898781', autoSkip:false, maxRotation:45, minRotation:45 } },
+      y:{ min:38, max:78, title:{ display:true, text:'准确率(%)', color:'#898781' }, ticks:{ color:'#898781', callback:(v)=> v+'%' }, grid:{ color:'rgba(137,135,129,0.18)' } }
+    }
+  }
+});
+
+const legendEl = document.getElementById('legend');
+const nodeByKey = {};
+(function render(){
+  function make(node, container){
+    nodeByKey[node.key] = node;
+    const row = document.createElement('div');
+    row.className = 'lg-item lg-d'+node.depth;
+    row.dataset.key = node.key;
+    let swatch = '';
+    if(node.leaf){
+      const style = node.dash.length ? (node.dash[0] <= 3 ? 'dotted' : 'dashed') : 'solid';
+      swatch = '<span class="line-swatch" style="border-top:2px '+style+' '+node.color+';"></span>';
+    }
+    const labelText = node.depth === 1 ? node.label + '：' : node.label;
+    row.innerHTML = '<span class="lg-label">'+swatch+labelText+'</span>';
+    node.el = row;
+    if(node.depth === 1){                        // 象限：象限名 + 三个方法同一行
+      const quadRow = document.createElement('div');
+      quadRow.className = 'lg-quad-row';
+      quadRow.appendChild(row);
+      const methodsRow = document.createElement('div');
+      methodsRow.className = 'lg-methods';
+      quadRow.appendChild(methodsRow);
+      container.appendChild(quadRow);
+      node.children.forEach(c => make(c, methodsRow));
+    } else {
+      container.appendChild(row);
+      if(node.children) node.children.forEach(c => make(c, container));
+    }
+  }
+  tree.forEach(n => make(n, legendEl));
+})();
+
+function apply(){
+  (function walk(nodes, ancestorsOn){
+    nodes.forEach(node=>{
+      const effOn = node.on && ancestorsOn;
+      node.el.classList.toggle('self-off', !node.on);
+      node.el.classList.toggle('eff-off', node.on && !effOn);
+      if(node.leaf) chart.setDatasetVisibility(node.dsIndex, effOn);
+      else walk(node.children, effOn);
+    });
+  })(tree, true);
+  chart.update();
+}
+
+legendEl.addEventListener('click', function(e){
+  const row = e.target.closest('.lg-item');
+  if(!row) return;
+  const node = nodeByKey[row.dataset.key];
+  if(node.depth === 0){                 // 站点单选：最多显示1个
+    const turningOn = !node.on;
+    tree.forEach(s => { s.on = false; });
+    node.on = turningOn;
+  } else {
+    node.on = !node.on;
+  }
+  apply();
+});
+
+tree.forEach((s, i) => { s.on = (i === 0); });   // 默认只显示第一个站点
+apply();
+</script>
+</body>
+</html>
