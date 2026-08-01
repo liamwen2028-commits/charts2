@@ -12,14 +12,14 @@
   h1 { font-size:18px; font-weight:600; margin:0 0 16px; }
   .layout { display:flex; flex-wrap:nowrap; gap:20px; align-items:flex-start; }
   .chart-box { position:relative; flex:1; min-width:0; height:360px; }
-  .legend { width:340px; flex:none; font-size:13px; color:#52514e; border:1px solid #eee; border-radius:8px; padding:10px 12px; }
-  .lg-item { padding:3px 0; cursor:pointer; user-select:none; white-space:nowrap; }
-  .lg-item .lg-label { display:inline-flex; align-items:center; gap:5px; }
-  .lg-d0 { font-weight:600; color:#1a1a1a; }
+  .legend { width:max-content; max-width:340px; flex:none; font-size:13px; color:#52514e; border:1px solid #eee; border-radius:8px; padding:6px 10px; }
+  .lg-item { padding:1px 0; cursor:pointer; user-select:none; white-space:nowrap; }
+  .lg-item .lg-label { display:inline-flex; align-items:center; gap:4px; }
+  .lg-d0 { font-weight:600; color:#1a1a1a; margin-top:2px; }
   .lg-d1 { font-weight:500; }
   .lg-d2 { padding:0; }
-  .lg-quad-row { display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; padding-left:16px; }
-  .lg-methods { display:flex; flex-wrap:wrap; gap:12px; }
+  .lg-quad-row { display:flex; align-items:center; flex-wrap:wrap; gap:2px 8px; padding-left:12px; }
+  .lg-methods { display:flex; flex-wrap:wrap; gap:8px; }
   .lg-item.self-off > .lg-label { opacity:0.4; }
   .lg-item.eff-off > .lg-label { opacity:0.4; }
   .line-swatch { width:16px; height:0; display:inline-block; }
